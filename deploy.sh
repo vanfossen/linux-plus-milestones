@@ -248,9 +248,28 @@ log "Section 4 complete"
 #
 # HINT: ufw --help or man ufw
 #       ufw allow PORT/PROTOCOL, then ufw --force enable
-
+#
 # YOUR CODE HERE:
 
+log "Section 5 started"
+
+# allow inbound:
+#   HTTP traffic on port 80/tcp
+#   HTTPS traffic on port 443/tcp
+#
+#   While most websites now prefer HTTPS, allowing HTTP
+#    ensures users can still access the site.
+#
+#   UFWs default policy is to deny all inbound
+#    and allow all outbound traffic.
+#
+#   TODO - container specific behavior
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# enable the firewall
+#  --force --> avoid "y/n" prompts
+ufw --force enable
 
 log "Section 5 complete"
 
