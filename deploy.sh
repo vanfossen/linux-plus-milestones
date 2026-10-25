@@ -127,7 +127,7 @@ mkdir -p /var/www/html
 chown webservice:webservice /var/www/html
 
 # set web root permissions
-#   owner=rwx (7) --> webservice can read, write, and execute
+#   owner=rwx (7) --> "webservice" can read, write, and execute
 #   group=rx (5) --> group members can read and execute
 #   other=rx (5) --> others can read and execute
 #
@@ -163,6 +163,26 @@ log "Section 2 complete"
 
 # YOUR CODE HERE:
 
+
+log "Section 3 started"
+
+# update package lists
+apt-get update
+
+# install apache2
+#   -y --> automatically answer "yes" to prompts
+apt-get install -y apache2
+
+# conditional check for installation success
+#   $? --> exit code of the last executed command
+#    (0 = success, non-zero = failure)
+#
+#   Ensures the script only continues if the installation succeeded
+#    and prevents subsequent dependent commands from running
+if [ $? -ne 0 ]; then
+    log "ERROR: Apache2 installation failed"
+    exit 1
+fi
 
 log "Section 3 complete"
 
