@@ -74,9 +74,24 @@ log "============================================================"
 #
 # HINT: Look up: useradd --help or man useradd
 #       Key flags: -r (system account), -s (shell), -d (home directory), -m (create home)
-
+#
 # YOUR CODE HERE:
 
+log "Section 1 started"
+
+# create service account "webservice"
+#   -r --> set as system (service) account
+#   -m --> create home directory
+#   -d --> set home directory: "/var/lib/webservice"
+#   -s --> set non-login shell: "/usr/sbin/nologin webservice"
+# 
+#   Service accounts are typically used by services / daemons.
+#   In most configurations, they do not require login shells.
+#   Since these accounts have elevated privileges, shells are
+#    disabled to reduce the attack surface if compromised.
+#
+#   <https://www.man7.org/linux/man-pages/man8/useradd.8.html>
+useradd -r -m -d /var/lib/webservice -s /usr/sbin/nologin webservice
 
 log "Section 1 complete"
 
