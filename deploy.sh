@@ -208,9 +208,25 @@ log "Section 3 complete"
 #         - What did you observe when you ran systemctl in this container?
 #           (Document the actual output or error you saw)
 #         - Why does systemctl behave differently in a container vs. a real server?
-
+#
 # YOUR CODE HERE:
 
+log "Section 4 started"
+
+# set apache2 to start at boot
+systemctl enable apache2
+
+# manually start apache2 service
+#
+#   On a real server, "systemctl is-active apache2" would show the service status
+#
+#   I observed the following error messages:
+#    System has not been booted with systemd as init system (PID 1). Can't operate.
+#    Failed to connect to bus: Host is down
+#
+#   Containers are typically stripped down and may not include all
+#    components required for systemd to function properly.
+systemctl start apache2
 
 log "Section 4 complete"
 
