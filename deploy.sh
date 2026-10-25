@@ -89,8 +89,6 @@ log "Section 1 started"
 #   In most configurations, they do not require login shells.
 #   Since these accounts have elevated privileges, shells are
 #    disabled to reduce the attack surface if compromised.
-#
-#   <https://www.man7.org/linux/man-pages/man8/useradd.8.html>
 useradd -r -m -d /var/lib/webservice -s /usr/sbin/nologin webservice
 
 log "Section 1 complete"
@@ -116,9 +114,32 @@ log "Section 1 complete"
 #         - What does each part of the permission value mean? (owner/group/other)
 #         - Why should "other" not have write permission on a web root?
 #         - What is the numeric permission value you chose and why?
-
+#
 # YOUR CODE HERE:
 
+log "Section 2 started"
+
+# create web root directory
+#   -p --> create parent directories, if they do not exist
+mkdir -p /var/www/html
+
+# set ownership of web root to "webservice"
+chown webservice:webservice /var/www/html
+
+# set web root permissions
+#   owner=rwx (7) --> webservice can read, write, and execute
+#   group=rx (5) --> group members can read and execute
+#   other=rx (5) --> others can read and execute
+#
+#   If the "other" user has write permissions, any user with system access
+#    could modify the web root contents (maliciously or accidentally).
+chmod 755 /var/www/html
+
+# create "index.html"
+echo "<html><body><h1>Hello, World!</h1></body></html>" > /var/www/html/index.html
+
+# set ownership of "index.html" to "webservice"
+chown webservice:webservice /var/www/html/index.html
 
 log "Section 2 complete"
 
