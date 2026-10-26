@@ -56,6 +56,11 @@ log "Running as user: $(whoami)"
 log "Environment: $(uname -a)"
 log "============================================================"
 
+log "STARTING: Updating system packages"
+apt-get update
+log "COMPLETED: Updating system packages"
+log "============================================================"
+
 
 # ── SECTION 1: Create Service Account ────────────────────────
 # A service account is a user account created specifically to run a service or daemon.
@@ -77,7 +82,7 @@ log "============================================================"
 #
 # YOUR CODE HERE:
 
-log "Section 1 started"
+log "STARTING: Section 1"
 
 # create service account "webservice"
 #   -r --> set as system (service) account
@@ -89,9 +94,11 @@ log "Section 1 started"
 #   In most configurations, they do not require login shells.
 #   Since these accounts have elevated privileges, shells are
 #    disabled to reduce the attack surface if compromised.
+log "RUNNING: useradd"
 useradd -r -m -d /var/lib/webservice -s /usr/sbin/nologin webservice
 
-log "Section 1 complete"
+log "COMPLETED: Section 1"
+log "============================================================"
 
 
 # ── SECTION 2: Configure Web Root Permissions ─────────────────
@@ -117,13 +124,15 @@ log "Section 1 complete"
 #
 # YOUR CODE HERE:
 
-log "Section 2 started"
+log "STARTING: Section 2"
 
 # create web root directory
 #   -p --> create parent directories, if they do not exist
+log "RUNNING: mkdir"
 mkdir -p /var/www/html
 
 # set ownership of web root to "webservice"
+log "RUNNING: chown"
 chown webservice:webservice /var/www/html
 
 # set web root permissions
@@ -133,15 +142,19 @@ chown webservice:webservice /var/www/html
 #
 #   If the "other" user has write permissions, any user with system access
 #    could modify the web root contents (maliciously or accidentally).
+log "RUNNING: chmod"
 chmod 755 /var/www/html
 
 # create "index.html"
+log "RUNNING: creating index.html"
 echo "<html><body><h1>Hello, World!</h1></body></html>" > /var/www/html/index.html
 
 # set ownership of "index.html" to "webservice"
+log "RUNNING: chown"
 chown webservice:webservice /var/www/html/index.html
 
-log "Section 2 complete"
+log "COMPLETED: Section 2"
+log "============================================================"
 
 
 # ── SECTION 3: Install Web Server Package ─────────────────────
@@ -164,13 +177,11 @@ log "Section 2 complete"
 # YOUR CODE HERE:
 
 
-log "Section 3 started"
-
-# update package lists
-apt-get update
+log "STARTING: Section 3"
 
 # install apache2
 #   -y --> automatically answer "yes" to prompts
+log "RUNNING: installing apache2"
 apt-get install -y apache2
 
 # conditional check for installation success
@@ -184,7 +195,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-log "Section 3 complete"
+log "COMPLETED: Section 3"
+log "============================================================"
 
 
 # ── SECTION 4: Enable and Start the Service ───────────────────
@@ -211,9 +223,10 @@ log "Section 3 complete"
 #
 # YOUR CODE HERE:
 
-log "Section 4 started"
+log "STARTING: Section 4"
 
 # set apache2 to start at boot
+log "RUNNING: enabling apache2 at boot"
 systemctl enable apache2
 
 # manually start apache2 service
@@ -226,9 +239,11 @@ systemctl enable apache2
 #
 #   Containers are typically stripped down and may not include all
 #    components required for systemd to function properly.
+log "RUNNING: starting apache2 service"
 systemctl start apache2
 
-log "Section 4 complete"
+log "COMPLETED: Section 4"
+log "============================================================"
 
 
 # ── SECTION 5: Configure Firewall ────────────────────────────
@@ -251,7 +266,7 @@ log "Section 4 complete"
 #
 # YOUR CODE HERE:
 
-log "Section 5 started"
+log "STARTING: Section 5"
 
 # allow inbound:
 #   HTTP traffic on port 80/tcp
@@ -264,14 +279,18 @@ log "Section 5 started"
 #    and allow all outbound traffic.
 #
 #   TODO - container specific behavior
+log "RUNNING: allowing HTTP traffic"
 ufw allow 80/tcp
+log "RUNNING: allowing HTTPS traffic"
 ufw allow 443/tcp
 
 # enable the firewall
 #  --force --> avoid "y/n" prompts
+log "RUNNING: enabling firewall"
 ufw --force enable
 
-log "Section 5 complete"
+log "COMPLETED: Section 5"
+log "============================================================"
 
 
 # ── SECTION 6: Log Rotation Cron Job ─────────────────────────
@@ -297,7 +316,7 @@ log "Section 5 complete"
 #
 # YOUR CODE HERE:
 
-log "Section 6 started"
+log "STARTING: Section 6"
 
 # lists current crontab contents and appends new job to crontab file
 #
@@ -313,13 +332,14 @@ log "Section 6 started"
 #   logrotate is a system command and logrotate.conf
 #    is the command's configuration file which holds
 #    the rotation settings.
+log "RUNNING: adding log rotation cron job"
 (crontab -l 2>/dev/null; \
     echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") \
     | crontab -
 
-log "Section 6 complete"
-
+log "COMPLETED: Section 6"
 log "============================================================"
+
 log "Deployment script completed"
 log "Run test_deploy.sh to verify your deployment"
 log "============================================================"
