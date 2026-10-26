@@ -294,11 +294,31 @@ log "Section 5 complete"
 #
 # HINT: To add a cron job from a script without overwriting existing crontab:
 #       (crontab -l 2>/dev/null; echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") | crontab -
-
+#
 # YOUR CODE HERE:
 
+log "Section 6 started"
+
+# lists current crontab contents and appends new job to crontab file
+#
+#   If logs are not managed, they will continue taking
+#    up space potentially until the system is out of storage.
+#
+#   0 --> minute (0 - 59)
+#   2 --> hour (0 - 23)
+#   * --> day (1 - 31)
+#   * --> month (1 - 12)
+#   0 --> weekday (0 - 6)
+#
+#   logrotate is a system command and logrotate.conf
+#    is the command's configuration file which holds
+#    the rotation settings.
+(crontab -l 2>/dev/null; \
+    echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") \
+    | crontab -
 
 log "Section 6 complete"
+
 log "============================================================"
 log "Deployment script completed"
 log "Run test_deploy.sh to verify your deployment"
