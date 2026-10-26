@@ -187,6 +187,7 @@ apt-get install -y apache2
 # conditional check for installation success
 #   $? --> exit code of the last executed command
 #    (0 = success, non-zero = failure)
+#   -ne 0 --> not equal to 0
 #
 #   Ensures the script only continues if the installation succeeded
 #    and prevents subsequent dependent commands from running
@@ -230,8 +231,9 @@ log "RUNNING: enabling apache2 at boot"
 systemctl enable apache2
 
 # manually start apache2 service
-#
-#   On a real server, "systemctl is-active apache2" would show the service status
+#   To show the service status, use
+#    "systemctl is-active apache2" --> displays "active" or "inactive"
+#    "systemctl status apache2" --> displays detailed status information
 #
 #   I observed the following error messages:
 #    System has not been booted with systemd as init system (PID 1). Can't operate.
@@ -278,7 +280,10 @@ log "STARTING: Section 5"
 #   UFWs default policy is to deny all inbound
 #    and allow all outbound traffic.
 #
-#   TODO - container specific behavior
+#   I observed the following container-specific behavior:
+#    - multiple permission errors
+#    - no such file or directory : "conntrack"
+#    - unknown option : "--dport"
 log "RUNNING: allowing HTTP traffic"
 ufw allow 80/tcp
 log "RUNNING: allowing HTTPS traffic"
@@ -336,6 +341,14 @@ log "RUNNING: adding log rotation cron job"
 (crontab -l 2>/dev/null; \
     echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") \
     | crontab -
+
+# verify that the cron job was added successfully
+#   -F --> interpret as a fixed string
+#   -q --> suppress output (quiet)
+#   -x --> match line exactly
+if crontab -l 2>/dev/null | grep -Fqx '0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf'; then
+    log "VERIFY: log rotation cron added successfully"
+fi
 
 log "COMPLETED: Section 6"
 log "============================================================"
