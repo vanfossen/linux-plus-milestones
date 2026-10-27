@@ -50,6 +50,22 @@ log() {
 # Create log file directory if it doesn't exist
 mkdir -p "$(dirname $LOG_FILE)"
 
+# ── COMMAND EXIT STATUS CHECKING ─────────────────────────────
+# This function checks the exit status of the previous
+# command and logs a success or error message.
+check_command() {
+    local exit_status="$1"
+    local success_message="$2"
+    local failure_message="$3"
+
+    if [ "$exit_status" -eq 0 ]; then
+        log "SUCCESS: $success_message"
+    else
+        log "ERROR: $failure_message"
+        return 1
+    fi
+}
+
 log "============================================================"
 log "Deployment script started"
 log "Running as user: $(whoami)"
@@ -81,7 +97,6 @@ log "============================================================"
 #       Key flags: -r (system account), -s (shell), -d (home directory), -m (create home)
 #
 # YOUR CODE HERE:
-
 log "STARTING: Section 1"
 
 # create service account "webservice"
@@ -94,8 +109,10 @@ log "STARTING: Section 1"
 #   In most configurations, they do not require login shells.
 #   Since these accounts have elevated privileges, shells are
 #    disabled to reduce the attack surface if compromised.
-log "RUNNING: useradd"
 useradd -r -m -d /var/lib/webservice -s /usr/sbin/nologin webservice
+check_command "$?" \
+    "'webservice' account creation command exited successfully" \
+    "'webservice' account creation command exited non-zero"
 
 log "COMPLETED: Section 1"
 log "============================================================"
@@ -123,17 +140,20 @@ log "============================================================"
 #         - What is the numeric permission value you chose and why?
 #
 # YOUR CODE HERE:
-
 log "STARTING: Section 2"
 
 # create web root directory
 #   -p --> create parent directories, if they do not exist
-log "RUNNING: mkdir"
 mkdir -p /var/www/html
+check_command "$?" \
+    "'/var/www/html' directory creation command exited successfully" \
+    "'/var/www/html' directory creation command exited non-zero"
 
 # set ownership of web root to "webservice"
-log "RUNNING: chown"
 chown webservice:webservice /var/www/html
+check_command "$?" \
+    "'/var/www/html' ownership command exited successfully" \
+    "'/var/www/html' ownership command exited non-zero"
 
 # set web root permissions
 #   owner=rwx (7) --> "webservice" can read, write, and execute
@@ -142,16 +162,24 @@ chown webservice:webservice /var/www/html
 #
 #   If the "other" user has write permissions, any user with system access
 #    could modify the web root contents (maliciously or accidentally).
-log "RUNNING: chmod"
 chmod 755 /var/www/html
+check_command "$?" \
+    "'/var/www/html' permissions command exited successfully" \
+    "'/var/www/html' permissions command exited non-zero"
+
+# TODO : is there a way to have children inherit the permissions of the parent directory?
 
 # create "index.html"
-log "RUNNING: creating index.html"
 echo "<html><body><h1>Hello, World!</h1></body></html>" > /var/www/html/index.html
+check_command "$?" \
+    "'/var/www/html/index.html' file creation command exited successfully" \
+    "'/var/www/html/index.html' file creation command exited non-zero"
 
 # set ownership of "index.html" to "webservice"
-log "RUNNING: chown"
 chown webservice:webservice /var/www/html/index.html
+check_command "$?" \
+    "'/var/www/html/index.html' ownership command exited successfully" \
+    "'/var/www/html/index.html' ownership command exited non-zero"
 
 log "COMPLETED: Section 2"
 log "============================================================"
@@ -181,20 +209,10 @@ log "STARTING: Section 3"
 
 # install apache2
 #   -y --> automatically answer "yes" to prompts
-log "RUNNING: installing apache2"
 apt-get install -y apache2
-
-# conditional check for installation success
-#   $? --> exit code of the last executed command
-#    (0 = success, non-zero = failure)
-#   -ne 0 --> not equal to 0
-#
-#   Ensures the script only continues if the installation succeeded
-#    and prevents subsequent dependent commands from running
-if [ $? -ne 0 ]; then
-    log "ERROR: Apache2 installation failed"
-    exit 1
-fi
+check_command "$?" \
+    "'apache2' package installation command exited successfully" \
+    "'apache2' package installation command exited non-zero"
 
 log "COMPLETED: Section 3"
 log "============================================================"
@@ -227,8 +245,10 @@ log "============================================================"
 log "STARTING: Section 4"
 
 # set apache2 to start at boot
-log "RUNNING: enabling apache2 at boot"
 systemctl enable apache2
+check_command "$?" \
+    "'apache2' service enable command exited successfully" \
+    "'apache2' service enable command exited non-zero"
 
 # manually start apache2 service
 #   To show the service status, use
@@ -241,8 +261,10 @@ systemctl enable apache2
 #
 #   Containers are typically stripped down and may not include all
 #    components required for systemd to function properly.
-log "RUNNING: starting apache2 service"
 systemctl start apache2
+check_command "$?" \
+    "'apache2' service start command exited successfully" \
+    "'apache2' service start command exited non-zero"
 
 log "COMPLETED: Section 4"
 log "============================================================"
@@ -284,15 +306,21 @@ log "STARTING: Section 5"
 #    - multiple permission errors
 #    - no such file or directory : "conntrack"
 #    - unknown option : "--dport"
-log "RUNNING: allowing HTTP traffic"
 ufw allow 80/tcp
-log "RUNNING: allowing HTTPS traffic"
+check_command "$?" \
+    "Firewall port 80/tcp allow command exited successfully" \
+    "'ufw allow 80/tcp' command exited non-zero"
 ufw allow 443/tcp
+check_command "$?" \
+    "Firewall port 443/tcp allow command exited successfully" \
+    "'ufw allow 443/tcp' command exited non-zero"
 
 # enable the firewall
 #  --force --> avoid "y/n" prompts
-log "RUNNING: enabling firewall"
 ufw --force enable
+check_command "$?" \
+    "Firewall enable command exited successfully" \
+    "Firewall enable command exited non-zero"
 
 log "COMPLETED: Section 5"
 log "============================================================"
@@ -337,10 +365,12 @@ log "STARTING: Section 6"
 #   logrotate is a system command and logrotate.conf
 #    is the command's configuration file which holds
 #    the rotation settings.
-log "RUNNING: adding log rotation cron job"
 (crontab -l 2>/dev/null; \
     echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") \
     | crontab -
+check_command "$?" \
+    "'logrotate' cron job addition command exited successfully" \
+    "'logrotate' cron job addition command exited non-zero"
 
 # verify that the cron job was added successfully
 #   -F --> interpret as a fixed string
@@ -349,6 +379,8 @@ log "RUNNING: adding log rotation cron job"
 if crontab -l 2>/dev/null | grep -Fqx '0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf'; then
     log "VERIFY: log rotation cron added successfully"
 fi
+
+# TODO : update verification command
 
 log "COMPLETED: Section 6"
 log "============================================================"
