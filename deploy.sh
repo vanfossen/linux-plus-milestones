@@ -50,10 +50,10 @@ log() {
 # Create log file directory if it doesn't exist
 mkdir -p "$(dirname $LOG_FILE)"
 
-# ── COMMAND EXIT STATUS CHECKING ─────────────────────────────
+# ── EXIT STATUS LOG FUNCTION ─────────────────────────────────
 # This function checks the exit status of the previous
 # command and logs a success or error message.
-check_command() {
+exit_status_check() {
     local exit_status="$1"
     local success_message="$2"
     local failure_message="$3"
@@ -110,7 +110,7 @@ log "STARTING: Section 1"
 #   Since these accounts have elevated privileges, shells are
 #    disabled to reduce the attack surface if compromised.
 useradd -r -m -d /var/lib/webservice -s /usr/sbin/nologin webservice
-check_command "$?" \
+exit_status_check "$?" \
     "'webservice' account creation command exited successfully" \
     "'webservice' account creation command exited non-zero"
 
@@ -145,39 +145,37 @@ log "STARTING: Section 2"
 # create web root directory
 #   -p --> create parent directories, if they do not exist
 mkdir -p /var/www/html
-check_command "$?" \
+exit_status_check "$?" \
     "'/var/www/html' directory creation command exited successfully" \
     "'/var/www/html' directory creation command exited non-zero"
 
 # set ownership of web root to "webservice"
 chown webservice:webservice /var/www/html
-check_command "$?" \
+exit_status_check "$?" \
     "'/var/www/html' ownership command exited successfully" \
     "'/var/www/html' ownership command exited non-zero"
 
 # set web root permissions
-#   owner=rwx (7) --> "webservice" can read, write, and execute
-#   group=rx (5) --> group members can read and execute
+#   owner=rwx (7) --> "webservice" (owner) can read, write, and execute
+#   group=rx (5) --> "webservice" group members can read and execute
 #   other=rx (5) --> others can read and execute
 #
 #   If the "other" user has write permissions, any user with system access
 #    could modify the web root contents (maliciously or accidentally).
 chmod 755 /var/www/html
-check_command "$?" \
+exit_status_check "$?" \
     "'/var/www/html' permissions command exited successfully" \
     "'/var/www/html' permissions command exited non-zero"
 
-# TODO : is there a way to have children inherit the permissions of the parent directory?
-
 # create "index.html"
 echo "<html><body><h1>Hello, World!</h1></body></html>" > /var/www/html/index.html
-check_command "$?" \
+exit_status_check "$?" \
     "'/var/www/html/index.html' file creation command exited successfully" \
     "'/var/www/html/index.html' file creation command exited non-zero"
 
 # set ownership of "index.html" to "webservice"
 chown webservice:webservice /var/www/html/index.html
-check_command "$?" \
+exit_status_check "$?" \
     "'/var/www/html/index.html' ownership command exited successfully" \
     "'/var/www/html/index.html' ownership command exited non-zero"
 
@@ -203,16 +201,22 @@ log "============================================================"
 #         - What does verifying the exit code protect against?
 
 # YOUR CODE HERE:
-
-
 log "STARTING: Section 3"
 
 # install apache2
 #   -y --> automatically answer "yes" to prompts
 apt-get install -y apache2
-check_command "$?" \
+exit_status_check "$?" \
     "'apache2' package installation command exited successfully" \
     "'apache2' package installation command exited non-zero"
+
+# verify apache2 installation
+if [ apt list --installed apache2 2>/dev/null | grep apache2 ]; then
+    log "VERIFY:'apache2' package installed successfully"
+else
+    log "ERROR: 'apache2' not installed"
+fi
+
 
 log "COMPLETED: Section 3"
 log "============================================================"
@@ -241,12 +245,11 @@ log "============================================================"
 #         - Why does systemctl behave differently in a container vs. a real server?
 #
 # YOUR CODE HERE:
-
 log "STARTING: Section 4"
 
 # set apache2 to start at boot
 systemctl enable apache2
-check_command "$?" \
+exit_status_check "$?" \
     "'apache2' service enable command exited successfully" \
     "'apache2' service enable command exited non-zero"
 
@@ -262,7 +265,7 @@ check_command "$?" \
 #   Containers are typically stripped down and may not include all
 #    components required for systemd to function properly.
 systemctl start apache2
-check_command "$?" \
+exit_status_check "$?" \
     "'apache2' service start command exited successfully" \
     "'apache2' service start command exited non-zero"
 
@@ -289,7 +292,6 @@ log "============================================================"
 #       ufw allow PORT/PROTOCOL, then ufw --force enable
 #
 # YOUR CODE HERE:
-
 log "STARTING: Section 5"
 
 # allow inbound:
@@ -307,18 +309,18 @@ log "STARTING: Section 5"
 #    - no such file or directory : "conntrack"
 #    - unknown option : "--dport"
 ufw allow 80/tcp
-check_command "$?" \
-    "Firewall port 80/tcp allow command exited successfully" \
-    "'ufw allow 80/tcp' command exited non-zero"
+exit_status_check "$?" \
+    "Firewall 80/tcp allow command exited successfully" \
+    "Firewall 80/tcp allow command exited non-zero"
 ufw allow 443/tcp
-check_command "$?" \
-    "Firewall port 443/tcp allow command exited successfully" \
-    "'ufw allow 443/tcp' command exited non-zero"
+exit_status_check "$?" \
+    "Firewall 443/tcp allow command exited successfully" \
+    "Firewall 443/tcp allow command exited non-zero"
 
 # enable the firewall
 #  --force --> avoid "y/n" prompts
 ufw --force enable
-check_command "$?" \
+exit_status_check "$?" \
     "Firewall enable command exited successfully" \
     "Firewall enable command exited non-zero"
 
@@ -348,11 +350,9 @@ log "============================================================"
 #       (crontab -l 2>/dev/null; echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") | crontab -
 #
 # YOUR CODE HERE:
-
 log "STARTING: Section 6"
 
 # lists current crontab contents and appends new job to crontab file
-#
 #   If logs are not managed, they will continue taking
 #    up space potentially until the system is out of storage.
 #
@@ -368,7 +368,7 @@ log "STARTING: Section 6"
 (crontab -l 2>/dev/null; \
     echo "0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf") \
     | crontab -
-check_command "$?" \
+exit_status_check "$?" \
     "'logrotate' cron job addition command exited successfully" \
     "'logrotate' cron job addition command exited non-zero"
 
@@ -378,9 +378,9 @@ check_command "$?" \
 #   -x --> match line exactly
 if crontab -l 2>/dev/null | grep -Fqx '0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf'; then
     log "VERIFY: log rotation cron added successfully"
+else
+    log "ERROR: log rotation cron job not added successfully"
 fi
-
-# TODO : update verification command
 
 log "COMPLETED: Section 6"
 log "============================================================"
