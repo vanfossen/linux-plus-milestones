@@ -211,7 +211,7 @@ exit_status_check "$?" \
     "'apache2' package installation command exited non-zero"
 
 # verify apache2 installation
-if [ apt list --installed apache2 2>/dev/null | grep apache2 ]; then
+if [ "$(apt list --installed apache2 2>/dev/null | grep apache2)" ]; then
     log "VERIFY:'apache2' package installed successfully"
 else
     log "ERROR: 'apache2' not installed"
@@ -374,9 +374,8 @@ exit_status_check "$?" \
 
 # verify that the cron job was added successfully
 #   -F --> interpret as a fixed string
-#   -q --> suppress output (quiet)
 #   -x --> match line exactly
-if crontab -l 2>/dev/null | grep -Fqx '0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf'; then
+if crontab -l 2>/dev/null | grep -Fx '0 2 * * 0 /usr/sbin/logrotate /etc/logrotate.conf'; then
     log "VERIFY: log rotation cron added successfully"
 else
     log "ERROR: log rotation cron job not added successfully"
