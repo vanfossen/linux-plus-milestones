@@ -149,7 +149,7 @@ exit_status_check "$?" \
     "'/var/www/html' directory creation command exited successfully" \
     "'/var/www/html' directory creation command exited non-zero"
 
-# set ownership of web root to "webservice"
+# set user and group ownership of web root to "webservice"
 chown webservice:webservice /var/www/html
 exit_status_check "$?" \
     "'/var/www/html' ownership command exited successfully" \
@@ -167,13 +167,13 @@ exit_status_check "$?" \
     "'/var/www/html' permissions command exited successfully" \
     "'/var/www/html' permissions command exited non-zero"
 
-# create "index.html"
+# create "index.html" with simple HTML template
 echo "<html><body><h1>Hello, World!</h1></body></html>" > /var/www/html/index.html
 exit_status_check "$?" \
     "'/var/www/html/index.html' file creation command exited successfully" \
     "'/var/www/html/index.html' file creation command exited non-zero"
 
-# set ownership of "index.html" to "webservice"
+# set user and group ownership of "index.html" to "webservice"
 chown webservice:webservice /var/www/html/index.html
 exit_status_check "$?" \
     "'/var/www/html/index.html' ownership command exited successfully" \
